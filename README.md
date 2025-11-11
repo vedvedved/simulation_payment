@@ -33,3 +33,4 @@ Plus, signals for each field (name, card, expiry, cvv) and errors.
 
 1. Pay button disabled till all user inputs provided preventing unnecessary api calls for real use case.
 2. Luhn check for valid card numbers implemented. 
+3. Responsive UI for mobile, tab and desktop devices
