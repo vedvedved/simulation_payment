@@ -1,0 +1,176 @@
+/* --- Checkout layout & sizing --- */
+.checkout-wrapper {
+  width: 100%;
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  box-sizing: border-box;
+}
+
+/* Card */
+.checkout-card {
+  width: 94%;
+  max-width: 980px;        /* large card on desktop */
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 12px 40px rgba(11, 18, 32, 0.06);
+  box-sizing: border-box;
+}
+
+/* Header */
+.checkout-header {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.checkout-title {
+  font-size: 1.6rem; /* larger */
+  margin: 0;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.checkout-sub {
+  margin: 8px 0 0 0;
+  color: #6b7280;
+  font-size: 0.96rem;
+}
+
+/* separator */
+.checkout-sep {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.04), rgba(0,0,0,0.06));
+  margin: 14px 0 20px 0;
+  border-radius: 2px;
+}
+
+/* top area with amount and CTA */
+.checkout-top {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.amount-block .amount-label {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.amount-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+/* CTA button block */
+.cta-block { margin-left: auto; }
+
+/* form styles (bigger inputs) */
+.form {
+  margin-top: 10px;
+}
+
+.form-row { margin-bottom: 14px; }
+
+.form-label { font-weight: 600; margin-bottom: 6px; display:block; }
+
+/* bigger inputs for accessibility */
+.input, .large-input {
+  width: 100%;
+  padding: 14px 14px;
+  border-radius: 10px;
+  border: 1px solid #e6e9ee;
+  font-size: 1.05rem;
+  box-sizing: border-box;
+}
+
+.large-input { padding: 16px 14px; font-size: 1.1rem; }
+
+/* focus ring */
+.input:focus, .large-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(79,70,229,0.08);
+  border-color: #4f46e5;
+}
+
+/* grid for expiry & cvv */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* actions */
+.form-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* buttons bigger */
+.btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.btn.large { padding: 14px 18px; font-size: 1.05rem; }
+
+.btn.primary {
+  background: #4f46e5;
+  color: white;
+  border: none;
+}
+
+.btn.pay {
+  background: #059669;
+  color: white;
+  border: none;
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid #e6e9ee;
+  color: #374151;
+}
+
+/* inline error */
+.error {
+  color: #b91c1c;
+  margin-top: 8px;
+  font-size: 0.92rem;
+}
+
+/* receipt styling */
+.receipt { margin-top: 16px; padding-top: 12px; }
+
+.receipt-title { margin: 0 0 10px 0; font-size: 1.25rem; }
+
+/* Responsive tweaks */
+@media (max-width: 920px) {
+  .checkout-card { padding: 22px; max-width: 760px; }
+  .checkout-title { font-size: 1.4rem; }
+  .amount-value { font-size: 1.1rem; }
+}
+
+@media (max-width: 640px) {
+  .checkout-card {
+    width: 98%;
+    padding: 18px;
+    border-radius: 12px;
+  }
+  .checkout-title { font-size: 1.2rem; }
+  .form-grid { grid-template-columns: 1fr; } /* stack expiry/cvv */
+  .cta-block { width: 100%; }
+  .checkout-top { flex-direction: column; align-items: stretch; }
+  .btn.large { width: 100%; }
+}
