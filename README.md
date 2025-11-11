@@ -9,4 +9,20 @@ This code base is the simple simulation of a complete payment transaction.
 
 
 ## My learnings
+index.astro is the entry point for our code. this loads the static html page for our applicaqation which will be hydrated later for interactivity wherein solid will take charge over astro.
 
+when "proceed" is clicked, form is now visible through a state change.
+form inputs : signals are now updated raectively, then the validation logic is rendered
+
+instead of multiple re renders via diffing algo like in react, solid actually works via creation of signals that directly changes the required part of DOM upon any change detection. So, there is no Vdom here and signals listen to changes thus ommiting the re-renders.The performance hit taken my react otherwise is efficiently tackled here.
+
+
+
+
+## There are three primary UI states:
+
+showForm — whether the payment form is visible
+loading — whether payment is processing
+receipt — the generated receipt (if present, payment done)
+
+Plus, signals for each field (name, card, expiry, cvv) and errors.

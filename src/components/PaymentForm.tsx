@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, createMemo } from "solid-js";
 
 type Receipt = {
   id: string;
@@ -148,27 +148,37 @@ export default function PaymentForm() {
     return currentErrors;
   };
 
-  const validateAll = () => {
-    const fields: (keyof FieldErrors)[] = ["name", "card", "expiry", "cvv"];
-    let lastErrors: FieldErrors = { ...errors() };
+  // Derived "form valid" boolean — true only when all checks pass
+  const isValid = createMemo(() => {
+    // quick checks for required fields
+    if (!name().trim()) return false;
+    if (!card().trim()) return false;
+    if (!expiry().trim()) return false;
+    if (!cvv().trim()) return false;
 
-    for (const f of fields) {
-      const res = validateField(f);
-      lastErrors = { ...lastErrors, ...res };
-    }
+    // if there are any error keys, form is invalid
+    if (Object.keys(errors()).length > 0) return false;
 
-    const keys = Object.keys(lastErrors);
-    if (keys.length > 0) {
-      const first = keys[0] as keyof FieldErrors;
-      if (first === "name") nameRef?.focus();
-      else if (first === "card") cardRef?.focus();
-      else if (first === "expiry") expiryRef?.focus();
-      else if (first === "cvv") cvvRef?.focus();
-      return false;
-    }
+    // deeper checks (redundant if validateField already set errors, but defensive)
+    const digits = card().replace(/\D/g, "");
+    if (!/^\d{13,19}$/.test(digits) || !luhnCheck(digits)) return false;
+
+    const expDigits = expiry().replace(/\D/g, "");
+    if (!/^\d{4}$/.test(expDigits)) return false;
+    const mm = parseInt(expDigits.slice(0, 2), 10);
+    const yy = parseInt(expDigits.slice(2), 10);
+    const now = new Date();
+    const curY = now.getFullYear() % 100;
+    const curM = now.getMonth() + 1;
+    if (!(mm >= 1 && mm <= 12)) return false;
+    if (yy < curY || (yy === curY && mm < curM)) return false;
+
+    if (!/^\d{3,4}$/.test(cvv())) return false;
+
     return true;
-  };
+  });
 
+  // We still keep a small guard on submit — but primarily rely on the disabled button
   const simulatePayment = () => {
     setLoading(true);
     setTimeout(() => {
@@ -192,18 +202,36 @@ export default function PaymentForm() {
 
   const onSubmit = (e: Event) => {
     e.preventDefault();
-    if (!validateAll()) return;
+    if (loading()) return;
+    // Defensive: if somehow button was enabled while invalid, block and focus first invalid
+    if (!isValid()) {
+      // find first invalid field and focus it
+      const firstErr = Object.keys(errors())[0] as keyof FieldErrors | undefined;
+      if (firstErr === "name") nameRef?.focus();
+      else if (firstErr === "card") cardRef?.focus();
+      else if (firstErr === "expiry") expiryRef?.focus();
+      else if (firstErr === "cvv") cvvRef?.focus();
+      return;
+    }
     simulatePayment();
   };
 
   return (
     <div class="checkout-wrapper">
       <div class="checkout-card">
-        {/* Header */}
-        <div class="checkout-header">
-          <h1 class="checkout-title">Complete your payment</h1>
-          <p class="checkout-sub">Secure payment — fast & simple</p>
-        </div>
+        {/* Header  */}
+      <div class="checkout-header">
+        <h1 class="checkout-title">
+          {receipt() ? "Payment Successful" : "Complete your payment"}
+        </h1>
+
+        <p class="checkout-sub">
+          {receipt()
+            ? "Thank you — your transaction was successful."
+            : "Secure payment — fast & simple"}
+        </p>
+      </div>
+
 
         <hr class="checkout-sep" />
 
@@ -308,7 +336,12 @@ export default function PaymentForm() {
             </div>
 
             <div class="form-actions">
-              <button type="submit" class="btn pay large" disabled={loading()}>
+              <button
+                type="submit"
+                class="btn pay large"
+                disabled={!isValid() || loading()}
+                aria-disabled={!isValid() || loading()}
+              >
                 {loading() ? "Processing..." : "Pay ₹499"}
               </button>
 
@@ -330,35 +363,25 @@ export default function PaymentForm() {
         {/* Receipt */}
         {receipt() && (
           <div class="receipt">
-            <h2 class="receipt-title">Payment Confirmed</h2>
-            <div class="receipt-row">
-              <strong>Transaction ID:</strong> {receipt()!.id}
-            </div>
-            <div class="receipt-row">
-              <strong>Name:</strong> {receipt()!.name}
-            </div>
-            <div class="receipt-row">
-              <strong>Card:</strong> {receipt()!.maskedCard}
-            </div>
-            <div class="receipt-row">
-              <strong>Amount:</strong> {receipt()!.amount}
-            </div>
-            <div class="receipt-row">
-              <strong>Date:</strong> {receipt()!.date}
+            <h2 class="receipt-title">Payment Completed</h2>
+
+            <div class="receipt-details">
+              <div class="receipt-row"><strong>Transaction ID:</strong> {receipt()!.id}</div>
+              <div class="receipt-row"><strong>Name:</strong> {receipt()!.name}</div>
+              <div class="receipt-row"><strong>Card:</strong> {receipt()!.maskedCard}</div>
+              <div class="receipt-row"><strong>Amount:</strong> {receipt()!.amount}</div>
+              <div class="receipt-row"><strong>Date:</strong> {receipt()!.date}</div>
             </div>
 
-            <div class="form-actions" style={{ "margin-top": "18px" }}>
-              <button
-                class="btn large"
-                onClick={() => {
-                  setReceipt(null);
-                }}
-              >
-                Make another payment
-              </button>
-            </div>
+            <button
+              class="btn primary large receipt-btn"
+              onClick={() => setReceipt(null)}
+            >
+              Make another payment
+            </button>
           </div>
         )}
+
       </div>
     </div>
   );
