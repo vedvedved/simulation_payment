@@ -1,21 +1,19 @@
 ---
+// src/pages/index.astro
+import BaseLayout from "../layouts/BaseLayout.astro";
 import PaymentForm from "../components/PaymentForm";
-import "../style.css";
 ---
+<BaseLayout title="Complete your payment">
+  <main class="page">
+    <div class="card">
+      <header class="checkout-header">
+        <h1 class="checkout-title">Complete your payment</h1>
+        <p class="checkout-sub">Secure payment — fast &amp; simple</p>
+      </header>
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Payment Simulation UI</title>
-     <!-- ✅ Favicon links -->
-    <link rel="icon" type="image/svg" href="/favicon.svg" />
-  </head>
-  <body>
-    <main class="page">
-      <div class="card">
-        <PaymentForm client:load />
-      </div>
-    </main>
-  </body>
-</html>
+      <hr class="checkout-sep" />
+
+      <PaymentForm client:load />
+    </div>
+  </main>
+</BaseLayout>

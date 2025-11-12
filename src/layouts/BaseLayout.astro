@@ -1,0 +1,17 @@
+---
+// src/layouts/BaseLayout.astro
+const { title = "Payment Simulation UI" } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{title}</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/styles/style.css" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

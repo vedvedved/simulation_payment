@@ -1,15 +1,16 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": ["src", ".astro/types.d.ts"],
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "moduleResolution": "bundler",
+    "target": "ES2022",
+    "module": "ESNext",
+    // "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   }
+  
 }
