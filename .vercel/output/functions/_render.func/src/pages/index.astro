@@ -1,0 +1,11 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PaymentForm from "../components/PaymentForm";
+---
+<BaseLayout
+  title="Complete your payment"
+  headerTitle="Complete your payment"
+  headerSub="Secure payment — fast & simple"
+>
+  <PaymentForm client:load />
+</BaseLayout>

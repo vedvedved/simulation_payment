@@ -1,0 +1,46 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ReceiptComponent from "../components/Receipt";
+import { type PaymentRecord } from "../types";
+
+const url = new URL(Astro.request.url);
+const tx = url.searchParams.get("tx");
+
+let record: PaymentRecord | null = null;
+
+if (tx) {
+  try {
+    // server-side fetch to our own API route (SSR)
+    const base = new URL(Astro.request.url).origin;
+    const res = await fetch(`${base}/api/payment/${encodeURIComponent(tx)}`);
+    if (res.ok) {
+      record = await res.json();
+    } else {
+      record = null;
+    }
+  } catch {
+    record = null;
+  }
+}
+---
+<BaseLayout
+  title={record ? "Payment Completed" : "Receipt"}
+  headerTitle={record ? "Payment Completed" : "Receipt"}
+  headerSub={record ? "Thank you — your transaction was successful." : "No transaction found."}
+>
+  {record ? (
+    <ReceiptComponent
+      id={record.id}
+      name={record.name}
+      maskedCard={record.maskedCard}
+      amount={record.amount}
+      date={record.date}
+      client:load
+    />
+  ) : (
+    <div class="receipt">
+      <p class="hint">Transaction ID missing or not found.</p>
+      <a class="btn primary large" href="/">Back to payment</a>
+    </div>
+  )}
+</BaseLayout>

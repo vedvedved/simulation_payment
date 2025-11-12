@@ -2,6 +2,8 @@ import { defineConfig } from "astro/config";
 import node from "@astrojs/node";
 import solid from "@astrojs/solid-js";
 
+import vercel from "@astrojs/vercel";
+
 /*
   Using adapter: node({ mode: 'standalone' })
   - 'standalone' builds a fully runnable server at dist/server/entry.mjs
@@ -14,9 +16,7 @@ export default defineConfig({
   // optional: change root/base if needed
   // root: "./src",
   integrations: [solid()],
-  adapter: node({
-    mode: "standalone"
-  }),
+  adapter: vercel(),
   // any other global config you want (e.g. trailingSlash)
   trailingSlash: "never"
 });

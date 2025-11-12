@@ -1,0 +1,337 @@
+/* ==========================================================
+   Payment Simulation UI – Optimized Global Stylesheet
+   Author: Vedika Jamdar
+   Purpose: Clean styles for Astro + Solid Payment MPA
+   ========================================================== */
+
+/* ------------------------------
+   CSS Variables / Theme
+   ------------------------------ */
+:root {
+  --page-padding: 28px;
+  --card-radius: 14px;
+  --shadow: 0 12px 40px rgba(11, 18, 32, 0.06);
+
+  --color-bg: #ffffff;
+  --color-text: #111827;
+  --color-muted: #6b7280;
+  --color-border: #e6e9ee;
+
+  --color-primary: #2563eb; /* blue for Proceed & CTA */
+  --color-primary-hover: #1d4ed8;
+  --color-pay: #059669;     /* green for Pay */
+  --color-pay-hover: #047857;
+  --color-error: #b91c1c;
+
+  --focus-ring: rgba(79,70,229,0.08);
+}
+
+/* ------------------------------
+   Layout
+   ------------------------------ */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #f8fafc;
+  color: var(--color-text);
+}
+
+.page {
+  width: 100%;
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--page-padding);
+  box-sizing: border-box;
+}
+
+.card {
+  width: 94%;
+  max-width: 980px;
+  background: var(--color-bg);
+  border-radius: var(--card-radius);
+  padding: 28px;
+  box-shadow: var(--shadow);
+  box-sizing: border-box;
+}
+
+/* ------------------------------
+   Header
+   ------------------------------ */
+.checkout-header {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.checkout-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.checkout-sub {
+  margin: 8px 0 0 0;
+  color: var(--color-muted);
+  font-size: 0.96rem;
+}
+
+/* separator */
+.checkout-sep {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.06));
+  margin: 14px 0 20px 0;
+  border-radius: 2px;
+}
+
+/* ------------------------------
+   Amount + CTA (index page)
+   ------------------------------ */
+.checkout-top {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.amount-block .amount-label {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.amount-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+/* ------------------------------
+   Form
+   ------------------------------ */
+.form {
+  margin-top: 10px;
+}
+
+.form-row {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.input,
+.large-input {
+  width: 100%;
+  padding: 14px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  font-size: 1.05rem;
+  box-sizing: border-box;
+  background: #fff;
+  color: var(--color-text);
+}
+
+.large-input {
+  padding: 16px 14px;
+  font-size: 1.1rem;
+}
+
+.input:focus,
+.large-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--focus-ring);
+  border-color: var(--color-primary);
+}
+
+/* expiry + cvv grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* form actions */
+.form-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ------------------------------
+   Buttons
+   ------------------------------ */
+.btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+  border: none;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn.large {
+  padding: 14px 18px;
+  font-size: 1.05rem;
+}
+
+.btn.primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn.pay {
+  background: var(--color-pay);
+  color: #fff;
+}
+
+.btn.pay:hover {
+  background: var(--color-pay-hover);
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: #374151;
+}
+
+/* focus-visible for accessibility */
+.btn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.18);
+  outline-offset: 2px;
+}
+
+/* ------------------------------
+   Disabled State + Cursor
+   ------------------------------ */
+:root {
+  --disabled-cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><circle cx='16' cy='16' r='10' fill='none' stroke='%23ff3b30' stroke-width='3'/><line x1='9' y1='9' x2='23' y2='23' stroke='%23ff3b30' stroke-width='3' stroke-linecap='round'/></svg>") 16 16, not-allowed;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.6;
+  filter: grayscale(0.08);
+  pointer-events: auto;
+  cursor: var(--disabled-cursor);
+}
+
+/* ------------------------------
+   Error & Hint
+   ------------------------------ */
+.error {
+  color: var(--color-error);
+  margin-top: 8px;
+  font-size: 0.92rem;
+}
+
+.hint {
+  font-size: 0.9rem;
+  color: var(--color-muted);
+  margin-top: 8px;
+}
+
+/* mobile tap hint animation */
+.disabled-hint {
+  margin-top: 10px;
+  text-align: center;
+  color: var(--color-muted);
+  animation: fadeUp 0.45s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ------------------------------
+   Receipt (SSR Receipt Page)
+   ------------------------------ */
+.receipt {
+  text-align: center;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 340px;
+}
+
+.receipt-title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 20px;
+}
+
+.receipt-details {
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.receipt-row {
+  margin: 6px 0;
+}
+
+.receipt-btn {
+  background-color: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.receipt-btn:hover {
+  background-color: var(--color-primary-hover);
+}
+
+/* ------------------------------
+   Responsive Tweaks
+   ------------------------------ */
+@media (max-width: 920px) {
+  .card {
+    padding: 22px;
+    max-width: 760px;
+  }
+
+  .checkout-title {
+    font-size: 1.4rem;
+  }
+
+  .amount-value {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .card {
+    width: 98%;
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .checkout-title {
+    font-size: 1.2rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .btn.large {
+    width: 100%;
+  }
+}
