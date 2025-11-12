@@ -1,8 +1,7 @@
 import { defineConfig } from "astro/config";
-import node from "@astrojs/node";
 import solid from "@astrojs/solid-js";
 
-import vercel from "@astrojs/vercel";
+import vercel from "@astrojs/vercel/serverless";
 
 /*
   Using adapter: node({ mode: 'standalone' })
