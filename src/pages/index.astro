@@ -1,19 +1,11 @@
 ---
-// src/pages/index.astro
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PaymentForm from "../components/PaymentForm";
 ---
-<BaseLayout title="Complete your payment">
-  <main class="page">
-    <div class="card">
-      <header class="checkout-header">
-        <h1 class="checkout-title">Complete your payment</h1>
-        <p class="checkout-sub">Secure payment — fast &amp; simple</p>
-      </header>
-
-      <hr class="checkout-sep" />
-
-      <PaymentForm client:load />
-    </div>
-  </main>
+<BaseLayout
+  title="Complete your payment"
+  headerTitle="Complete your payment"
+  headerSub="Secure payment — fast & simple"
+>
+  <PaymentForm client:load />
 </BaseLayout>

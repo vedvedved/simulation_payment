@@ -1,26 +1,18 @@
 [
   {
-    "id": "TXN-1EE6D33D",
+    "id": "TXN-E875EBD2",
     "name": "Vedika",
-    "maskedCard": "•••• •••• •••• 1541",
+    "maskedCard": "•••• •••• •••• 4127",
     "amount": "₹499.00",
-    "date": "2025-11-12T14:53:24.271Z",
+    "date": "2025-11-12T15:24:40.867Z",
     "expiry": "12/34"
   },
   {
-    "id": "TXN-39917598",
-    "name": "Vedika",
-    "maskedCard": "•••• •••• •••• 6171",
+    "id": "TXN-FC319D00",
+    "name": "Ved",
+    "maskedCard": "•••• •••• •••• 4519",
     "amount": "₹499.00",
-    "date": "2025-11-12T14:55:21.999Z",
-    "expiry": "12/34"
-  },
-  {
-    "id": "TXN-D8F98F5D",
-    "name": "Vedika",
-    "maskedCard": "•••• •••• •••• 5352",
-    "amount": "₹499.00",
-    "date": "2025-11-12T14:59:41.891Z",
+    "date": "2025-11-12T15:26:11.104Z",
     "expiry": "12/34"
   }
 ]

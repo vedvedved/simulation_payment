@@ -1,4 +1,3 @@
-// src/pages/api/payment.ts
 import type { APIRoute } from "astro";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
@@ -31,8 +30,8 @@ export const POST: APIRoute = async ({ request }) => {
     const name = String(payload?.name ?? "").trim();
     const rawCard = String(payload?.card ?? "").replace(/\s+/g, "");
     const maskedCard = String(payload?.maskedCard ?? "").trim();
-    const expiry = String(payload?.expiry ?? "").trim(); // MM/YY or MMYY
-    const cvv = String(payload?.cvv ?? "").trim(); // we will not store real CVV
+    const expiry = String(payload?.expiry ?? "").trim();
+    const cvv = String(payload?.cvv ?? "").trim();
     const amount = String(payload?.amount ?? "₹499.00");
 
     if (!name) return new Response(JSON.stringify({ error: "name required" }), { status: 400 });
@@ -53,7 +52,6 @@ export const POST: APIRoute = async ({ request }) => {
       amount,
       date: new Date().toISOString(),
       expiry,
-      // cvv: "•••", // do not store real CVV in any production system
     };
 
     const arr = await readPayments();

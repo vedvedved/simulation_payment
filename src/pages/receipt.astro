@@ -1,10 +1,7 @@
 ---
-// src/pages/receipt.astro
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ReceiptComponent from "../components/Receipt";
-import fs from "fs/promises";
-import path from "path";
-import type { PaymentRecord } from "../types";
+import { type PaymentRecord } from "../types";
 
 const url = new URL(Astro.request.url);
 const tx = url.searchParams.get("tx");
@@ -13,41 +10,37 @@ let record: PaymentRecord | null = null;
 
 if (tx) {
   try {
-    const file = path.resolve("./public/payments.json");
-    const raw = await fs.readFile(file, "utf-8");
-    const arr: PaymentRecord[] = JSON.parse(raw || "[]");
-    record = arr.find((r) => r.id === tx) ?? null;
+    // server-side fetch to our own API route (SSR)
+    const base = new URL(Astro.request.url).origin;
+    const res = await fetch(`${base}/api/payment/${encodeURIComponent(tx)}`);
+    if (res.ok) {
+      record = await res.json();
+    } else {
+      record = null;
+    }
   } catch {
     record = null;
   }
 }
 ---
-<BaseLayout title={record ? "Payment Completed" : "Receipt"}>
-  <main class="page">
-    <div class="card">
-      <div class="checkout-header">
-        <h1 class="checkout-title">{record ? "Payment Completed" : "Receipt"}</h1>
-        <p class="checkout-sub">
-          {record ? "Thank you — your transaction was successful." : "No transaction found."}
-        </p>
-      </div>
-
-      <hr class="checkout-sep" />
-
-      {record ? (
-        <ReceiptComponent
-          id={record.id}
-          name={record.name}
-          maskedCard={record.maskedCard}
-          amount={record.amount}
-          date={record.date}
-        />
-      ) : (
-        <div class="receipt">
-          <p class="hint">Transaction ID missing or not found.</p>
-          <a class="btn primary large" href="/">Back to payment</a>
-        </div>
-      )}
+<BaseLayout
+  title={record ? "Payment Completed" : "Receipt"}
+  headerTitle={record ? "Payment Completed" : "Receipt"}
+  headerSub={record ? "Thank you — your transaction was successful." : "No transaction found."}
+>
+  {record ? (
+    <ReceiptComponent
+      id={record.id}
+      name={record.name}
+      maskedCard={record.maskedCard}
+      amount={record.amount}
+      date={record.date}
+      client:load
+    />
+  ) : (
+    <div class="receipt">
+      <p class="hint">Transaction ID missing or not found.</p>
+      <a class="btn primary large" href="/">Back to payment</a>
     </div>
-  </main>
+  )}
 </BaseLayout>

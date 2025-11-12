@@ -1,10 +1,8 @@
-// src/type.ts
 export type PaymentRecord = {
   id: string;
   name: string;
   maskedCard: string;
   amount: string;
-  date: string;
+  date: string; // ISO
   expiry?: string;
-  cvv?: string; // placeholder only; skip in production
 };

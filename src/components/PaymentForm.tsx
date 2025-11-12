@@ -1,5 +1,13 @@
-// src/components/PaymentForm.tsx
-import { createSignal } from "solid-js";
+import { createSignal, createMemo, Show } from "solid-js";
+import {
+  formatCardInput,
+  formatExpiryInput,
+  maskCardDisplay,
+  validateName,
+  validateCard,
+  validateExpiry,
+  validateCvv,
+} from "../lib/validators";
 
 export default function PaymentForm() {
   const [name, setName] = createSignal("");
@@ -7,46 +15,45 @@ export default function PaymentForm() {
   const [expiry, setExpiry] = createSignal("");
   const [cvv, setCvv] = createSignal("");
   const [loading, setLoading] = createSignal(false);
-  const [error, setError] = createSignal("");
+  const [fieldErrors, setFieldErrors] = createSignal({
+    name: "",
+    card: "",
+    expiry: "",
+    cvv: "",
+    global: "",
+  });
 
-  const onCardInput = (value: string) => {
-    const raw = value.replace(/\D/g, "").slice(0, 19);
-    const spaced = raw.replace(/(.{4})/g, "$1 ").trim();
-    setCard(spaced);
-  };
+  // derived validity: enable pay only when all fields pass validation
+  const isValid = createMemo(() => {
+    const eName = validateName(name());
+    const eCard = validateCard(card());
+    const eExp = validateExpiry(expiry());
+    const eCvv = validateCvv(cvv());
+    // set inline errors so UI updates as user types
+    setFieldErrors({
+      name: eName,
+      card: eCard,
+      expiry: eExp,
+      cvv: eCvv,
+      global: "",
+    });
+    return !eName && !eCard && !eExp && !eCvv;
+  });
 
-  const onExpiryInput = (value: string) => {
-    const raw = value.replace(/\D/g, "").slice(0, 4);
-    if (raw.length <= 2) setExpiry(raw);
-    else setExpiry(raw.slice(0, 2) + "/" + raw.slice(2));
-  };
-
-  const maskCard = (num: string) => {
-    const d = num.replace(/\D/g, "");
-    return d.length >= 4 ? "•••• •••• •••• " + d.slice(-4) : "••••";
-  };
-
-  const validate = () => {
-    const cardDigits = card().replace(/\D/g, "");
-    const exp = expiry().replace(/\D/g, "");
-    const cv = cvv().replace(/\D/g, "");
-    if (!name().trim()) return "Name is required";
-    if (cardDigits.length < 13 || cardDigits.length > 19) return "Invalid card number";
-    if (exp.length !== 4) return "Expiry must be MM/YY";
-    if (cv.length < 3 || cv.length > 4) return "Invalid CVV";
-    return "";
-  };
+  const onCardInput = (v: string) => setCard(formatCardInput(v));
+  const onExpiryInput = (v: string) => setExpiry(formatExpiryInput(v));
+  const onCvvInput = (v: string) => setCvv(v.replace(/\D/g, "").slice(0, 4));
 
   const onSubmit = async (e: Event) => {
     e.preventDefault();
-    setError("");
-    const err = validate();
-    if (err) {
-      setError(err);
+    // final check
+    if (!isValid()) {
+      setFieldErrors((prev) => ({ ...prev, global: "Fix errors above before paying." }));
       return;
     }
-
+    setFieldErrors((p) => ({ ...p, global: "" }));
     setLoading(true);
+
     try {
       const resp = await fetch("/api/payment", {
         method: "POST",
@@ -54,20 +61,22 @@ export default function PaymentForm() {
         body: JSON.stringify({
           name: name().trim(),
           card: card().replace(/\s+/g, ""),
-          maskedCard: maskCard(card()),
+          maskedCard: maskCardDisplay(card()),
           expiry: expiry(),
           cvv: cvv(),
           amount: "₹499.00",
         }),
       });
+
       const data = await resp.json();
       if (resp.ok && data.id) {
+        // safe navigation to receipt page
         location.href = `/receipt?tx=${encodeURIComponent(data.id)}`;
       } else {
-        setError(data?.error || "Server error");
+        setFieldErrors((p) => ({ ...p, global: data?.error || "Server error" }));
       }
-    } catch {
-      setError("Network error");
+    } catch (err) {
+      setFieldErrors((p) => ({ ...p, global: "Network error" }));
     } finally {
       setLoading(false);
     }
@@ -82,7 +91,11 @@ export default function PaymentForm() {
           value={name()}
           onInput={(e) => setName((e.currentTarget as HTMLInputElement).value)}
           placeholder="Full name"
+          autocomplete="cc-name"
         />
+        <Show when={fieldErrors().name}>
+          <div class="error" role="alert">{fieldErrors().name}</div>
+        </Show>
       </div>
 
       <div class="form-row">
@@ -93,7 +106,11 @@ export default function PaymentForm() {
           placeholder="1234 5678 9012 3456"
           value={card()}
           onInput={(e) => onCardInput((e.currentTarget as HTMLInputElement).value)}
+          autocomplete="cc-number"
         />
+        <Show when={fieldErrors().card}>
+          <div class="error" role="alert">{fieldErrors().card}</div>
+        </Show>
       </div>
 
       <div class="form-grid">
@@ -105,7 +122,11 @@ export default function PaymentForm() {
             placeholder="MM/YY"
             value={expiry()}
             onInput={(e) => onExpiryInput((e.currentTarget as HTMLInputElement).value)}
+            autocomplete="cc-exp"
           />
+          <Show when={fieldErrors().expiry}>
+            <div class="error" role="alert">{fieldErrors().expiry}</div>
+          </Show>
         </div>
 
         <div>
@@ -117,22 +138,24 @@ export default function PaymentForm() {
             placeholder="***"
             maxLength={4}
             value={cvv()}
-            onInput={(e) => setCvv((e.currentTarget as HTMLInputElement).value.replace(/\D/g, ""))}
+            onInput={(e) => onCvvInput((e.currentTarget as HTMLInputElement).value)}
+            autocomplete="cc-csc"
           />
+          <Show when={fieldErrors().cvv}>
+            <div class="error" role="alert">{fieldErrors().cvv}</div>
+          </Show>
         </div>
       </div>
 
       <div class="form-actions">
-        <button class="btn pay large" type="submit" disabled={loading()}>
+        <button class="btn pay large" type="submit" disabled={!isValid() || loading()}>
           {loading() ? "Processing..." : "Pay ₹499"}
         </button>
       </div>
 
-      {error() && (
-        <div class="error" role="alert">
-          {error()}
-        </div>
-      )}
+      <Show when={fieldErrors().global}>
+        <div class="error" role="alert">{fieldErrors().global}</div>
+      </Show>
     </form>
   );
 }
