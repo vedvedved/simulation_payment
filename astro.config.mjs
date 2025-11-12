@@ -1,7 +1,7 @@
 import { defineConfig } from "astro/config";
 import solid from "@astrojs/solid-js";
 
-import vercel from "@astrojs/vercel/serverless";
+import vercel from "@astrojs/vercel";
 
 /*
   Using adapter: node({ mode: 'standalone' })
@@ -15,7 +15,7 @@ export default defineConfig({
   // optional: change root/base if needed
   // root: "./src",
   integrations: [solid()],
-  adapter: vercel(),
+  adapter: vercel({imageService: true}),
   // any other global config you want (e.g. trailingSlash)
   trailingSlash: "never"
 });

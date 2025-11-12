@@ -2,7 +2,6 @@ import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import { randomUUID } from 'crypto';
-import { l as luhnCheck } from '../../chunks/validators_K8FygQuz.mjs';
 export { renderers } from '../../renderers.mjs';
 
 const __dirname$1 = dirname(fileURLToPath(import.meta.url));
@@ -28,12 +27,6 @@ const POST = async ({ request }) => {
     const expiry = String(payload?.expiry ?? "").trim();
     const cvv = String(payload?.cvv ?? "").trim();
     const amount = String(payload?.amount ?? "₹499.00");
-    if (!name) return new Response(JSON.stringify({ error: "name required" }), { status: 400 });
-    if (!/^\d{13,19}$/.test(rawCard)) return new Response(JSON.stringify({ error: "card invalid" }), { status: 400 });
-    if (!luhnCheck(rawCard)) return new Response(JSON.stringify({ error: "card Luhn failed" }), { status: 400 });
-    const expDigits = expiry.replace(/\D/g, "");
-    if (!/^\d{4}$/.test(expDigits)) return new Response(JSON.stringify({ error: "expiry invalid" }), { status: 400 });
-    if (!/^\d{3,4}$/.test(cvv)) return new Response(JSON.stringify({ error: "cvv invalid" }), { status: 400 });
     const id = "TXN-" + randomUUID().split("-")[0].toUpperCase();
     const record = {
       id,

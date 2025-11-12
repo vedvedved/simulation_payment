@@ -1,9 +1,52 @@
-import { e as createComponent$1, k as renderComponent, r as renderTemplate } from '../chunks/astro/server_BoSdno3s.mjs';
-import { $ as $$BaseLayout } from '../chunks/BaseLayout_DJwnb3-v.mjs';
+import { e as createComponent$1, k as renderComponent, r as renderTemplate } from '../chunks/astro/server_nOWAxk6x.mjs';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_PdenlSjW.mjs';
 import { ssr, ssrHydrationKey, ssrAttribute, escape, createComponent } from 'solid-js/web';
 import { createSignal, createMemo, Show } from 'solid-js';
-import { v as validateName, a as validateCard, b as validateExpiry, c as validateCvv } from '../chunks/validators_K8FygQuz.mjs';
 export { renderers } from '../renderers.mjs';
+
+function luhnCheck(cardNumber) {
+  const digits = cardNumber.replace(/\D/g, "");
+  let sum = 0;
+  let alt = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let n = parseInt(digits.charAt(i), 10);
+    if (alt) {
+      n *= 2;
+      if (n > 9) n -= 9;
+    }
+    sum += n;
+    alt = !alt;
+  }
+  return !!digits && sum % 10 === 0;
+}
+function validateName(name) {
+  if (!name || !name.trim()) return "Name required";
+  if (name.trim().length < 2) return "Use full name";
+  return "";
+}
+function validateCard(card) {
+  const digits = card.replace(/\D/g, "");
+  if (!/^\d{13,19}$/.test(digits)) return "Card must be 13–19 digits";
+  if (!luhnCheck(digits)) return "Invalid card number";
+  return "";
+}
+function validateExpiry(expiry) {
+  const digits = expiry.replace(/\D/g, "");
+  if (!/^\d{4}$/.test(digits)) return "Expiry must be MM/YY";
+  const mm = Number(digits.slice(0, 2));
+  const yy = Number(digits.slice(2, 4));
+  if (mm < 1 || mm > 12) return "Invalid month";
+  const now = /* @__PURE__ */ new Date();
+  const currYY = Number(String(now.getFullYear()).slice(2));
+  const currMM = now.getMonth() + 1;
+  if (yy < currYY || yy === currYY && mm < currMM) return "Card expired";
+  return "";
+}
+function validateCvv(cvv) {
+  const d = cvv.replace(/\D/g, "");
+  if (!/^\d{3,4}$/.test(d)) return "CVV must be 3 or 4 digits";
+  return "";
+}
 
 var _tmpl$ = ["<div", ' class="error" role="alert">', "</div>"], _tmpl$2 = ["<form", ' class="form" novalidate><div class="form-row"><label class="form-label">Name on card</label><input class="input large-input"', ' placeholder="Full name" autocomplete="cc-name"><!--$-->', '<!--/--></div><div class="form-row"><label class="form-label">Card number</label><input class="input large-input" inputmode="numeric" placeholder="1234 5678 9012 3456"', ' autocomplete="cc-number"><!--$-->', '<!--/--></div><div class="form-grid"><div><label class="form-label">Expiry (MM/YY)</label><input class="input" inputmode="numeric" placeholder="MM/YY"', ' autocomplete="cc-exp"><!--$-->', '<!--/--></div><div><label class="form-label">CVV</label><input class="input" type="password" inputmode="numeric" placeholder="***" maxlength="4"', ' autocomplete="cc-csc"><!--$-->', '<!--/--></div></div><div class="form-actions"><button class="btn pay large" type="submit"', ">", "</button></div><!--$-->", "<!--/--></form>"];
 function PaymentForm() {

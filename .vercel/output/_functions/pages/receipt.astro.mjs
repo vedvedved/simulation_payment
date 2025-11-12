@@ -1,5 +1,5 @@
-import { e as createComponent, f as createAstro, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_BoSdno3s.mjs';
-import { $ as $$BaseLayout } from '../chunks/BaseLayout_DJwnb3-v.mjs';
+import { e as createComponent, f as createAstro, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_nOWAxk6x.mjs';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_PdenlSjW.mjs';
 import { ssr, ssrHydrationKey, escape } from 'solid-js/web';
 export { renderers } from '../renderers.mjs';
 
