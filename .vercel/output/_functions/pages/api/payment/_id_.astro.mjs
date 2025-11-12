@@ -1,13 +1,12 @@
 import fs from 'fs/promises';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import os from 'os';
+import { resolve } from 'path';
 export { renderers } from '../../../renderers.mjs';
 
-const __dirname$1 = dirname(fileURLToPath(import.meta.url));
-const FILE = resolve(__dirname$1, "../../../../public/payments.json");
-async function readPayments() {
+const TEMP_FILE = resolve(os.tmpdir(), "payments.json");
+async function readPaymentsSafe() {
   try {
-    const raw = await fs.readFile(FILE, "utf-8");
+    const raw = await fs.readFile(TEMP_FILE, "utf-8");
     return JSON.parse(raw || "[]");
   } catch {
     return [];
@@ -15,15 +14,31 @@ async function readPayments() {
 }
 const GET = async ({ params }) => {
   try {
-    const id = String(params.id ?? "");
-    if (!id) return new Response(JSON.stringify({ error: "id required" }), { status: 400 });
-    const arr = await readPayments();
+    const id = String(params?.id ?? "").trim();
+    if (!id) {
+      return new Response(JSON.stringify({ error: "id required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    const arr = await readPaymentsSafe();
     const found = arr.find((r) => r.id === id);
-    if (!found) return new Response(JSON.stringify({ error: "not found" }), { status: 404 });
-    return new Response(JSON.stringify(found), { status: 200 });
+    if (!found) {
+      return new Response(JSON.stringify({ error: "not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    return new Response(JSON.stringify(found), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (err) {
     console.error("API GET error:", err);
-    return new Response(JSON.stringify({ error: "server error" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 };
 
