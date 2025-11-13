@@ -2,120 +2,75 @@ import { e as createComponent$1, k as renderComponent, r as renderTemplate } fro
 import { $ as $$BaseLayout } from '../chunks/BaseLayout_PdenlSjW.mjs';
 import { ssr, ssrHydrationKey, ssrAttribute, escape, createComponent } from 'solid-js/web';
 import { createSignal, createMemo, Show } from 'solid-js';
+import { b as validateCvv, c as validateExpiry, a as validateCard, v as validateName } from '../chunks/validators_B1dPmZkV.mjs';
 export { renderers } from '../renderers.mjs';
 
-function luhnCheck(cardNumber) {
-  const digits = cardNumber.replace(/\D/g, "");
-  let sum = 0;
-  let alt = false;
-  for (let i = digits.length - 1; i >= 0; i--) {
-    let n = parseInt(digits.charAt(i), 10);
-    if (alt) {
-      n *= 2;
-      if (n > 9) n -= 9;
-    }
-    sum += n;
-    alt = !alt;
-  }
-  return !!digits && sum % 10 === 0;
-}
-function validateName(name) {
-  if (!name || !name.trim()) return "Name required";
-  if (name.trim().length < 2) return "Use full name";
-  return "";
-}
-function validateCard(card) {
-  const digits = card.replace(/\D/g, "");
-  if (!/^\d{13,19}$/.test(digits)) return "Card must be 13–19 digits";
-  if (!luhnCheck(digits)) return "Invalid card number";
-  return "";
-}
-function validateExpiry(expiry) {
-  const digits = expiry.replace(/\D/g, "");
-  if (!/^\d{4}$/.test(digits)) return "Expiry must be MM/YY";
-  const mm = Number(digits.slice(0, 2));
-  const yy = Number(digits.slice(2, 4));
-  if (mm < 1 || mm > 12) return "Invalid month";
-  const now = /* @__PURE__ */ new Date();
-  const currYY = Number(String(now.getFullYear()).slice(2));
-  const currMM = now.getMonth() + 1;
-  if (yy < currYY || yy === currYY && mm < currMM) return "Card expired";
-  return "";
-}
-function validateCvv(cvv) {
-  const d = cvv.replace(/\D/g, "");
-  if (!/^\d{3,4}$/.test(d)) return "CVV must be 3 or 4 digits";
-  return "";
-}
-
-var _tmpl$ = ["<div", ' class="error" role="alert">', "</div>"], _tmpl$2 = ["<form", ' class="form" novalidate><div class="form-row"><label class="form-label">Name on card</label><input class="input large-input"', ' placeholder="Full name" autocomplete="cc-name"><!--$-->', '<!--/--></div><div class="form-row"><label class="form-label">Card number</label><input class="input large-input" inputmode="numeric" placeholder="1234 5678 9012 3456"', ' autocomplete="cc-number"><!--$-->', '<!--/--></div><div class="form-grid"><div><label class="form-label">Expiry (MM/YY)</label><input class="input" inputmode="numeric" placeholder="MM/YY"', ' autocomplete="cc-exp"><!--$-->', '<!--/--></div><div><label class="form-label">CVV</label><input class="input" type="password" inputmode="numeric" placeholder="***" maxlength="4"', ' autocomplete="cc-csc"><!--$-->', '<!--/--></div></div><div class="form-actions"><button class="btn pay large" type="submit"', ">", "</button></div><!--$-->", "<!--/--></form>"];
+var _tmpl$ = ["<div", ' id="err-name" class="error" role="alert">', "</div>"], _tmpl$2 = ["<div", ' id="err-card" class="error" role="alert">', "</div>"], _tmpl$3 = ["<div", ' id="err-expiry" class="error" role="alert">', "</div>"], _tmpl$4 = ["<div", ' id="err-cvv" class="error" role="alert">', "</div>"], _tmpl$5 = ["<div", ' class="error" role="alert">', "</div>"], _tmpl$6 = ["<form", ' class="form" novalidate', "><fieldset", ' class="fieldset"><div class="form-row" id="row-name"><label for="name" class="form-label">Name on card</label><input id="name" class="input large-input"', ' type="text"', ' placeholder="Full name" autocomplete="cc-name"><!--$-->', '<!--/--></div><div class="form-row" id="row-card"><label for="card" class="form-label">Card number</label><input id="card" class="input large-input"', ' inputmode="numeric" type="text"', ' placeholder="1234 5678 9012 3456" autocomplete="cc-number"><!--$-->', '<!--/--></div><div class="form-grid"><div class="form-row" id="row-expiry"><label for="expiry" class="form-label">Expiry (MM/YY)</label><input id="expiry" class="input"', ' inputmode="numeric" type="text"', ' placeholder="MM/YY" autocomplete="cc-exp"><!--$-->', '<!--/--></div><div class="form-row" id="row-cvv"><label for="cvv" class="form-label">CVV</label><input id="cvv" class="input"', ' inputmode="numeric" type="text"', ' placeholder="•••" autocomplete="cc-csc" maxlength="4"><!--$-->', '<!--/--></div></div><div class="form-actions"><button class="btn pay large" type="submit"', ">", "</button></div></fieldset><!--$-->", "<!--/--></form>"];
 function PaymentForm() {
-  const [name, setName] = createSignal("");
-  const [card, setCard] = createSignal("");
-  const [expiry, setExpiry] = createSignal("");
-  const [cvv, setCvv] = createSignal("");
-  const [loading, setLoading] = createSignal(false);
-  const [fieldErrors, setFieldErrors] = createSignal({
+  const [form, setForm] = createSignal({
     name: "",
     card: "",
     expiry: "",
-    cvv: "",
-    global: ""
+    cvv: ""
   });
-  const isValid = createMemo(() => {
-    const eName = validateName(name());
-    const eCard = validateCard(card());
-    const eExp = validateExpiry(expiry());
-    const eCvv = validateCvv(cvv());
-    setFieldErrors({
-      name: eName,
-      card: eCard,
-      expiry: eExp,
-      cvv: eCvv,
-      global: ""
-    });
-    return !eName && !eCard && !eExp && !eCvv;
+  const [errors, setErrors] = createSignal({});
+  const [loading, setLoading] = createSignal(false);
+  const [touched, setTouched] = createSignal({
+    name: false,
+    card: false,
+    expiry: false,
+    cvv: false
   });
-  return ssr(_tmpl$2, ssrHydrationKey(), ssrAttribute("value", escape(name(), true), false), escape(createComponent(Show, {
+  const [actualCvv, setActualCvv] = createSignal("");
+  const [maskedCvv, setMaskedCvv] = createSignal("");
+  const validation = createMemo(() => ({
+    name: validateName(form().name),
+    card: validateCard(form().card),
+    expiry: validateExpiry(form().expiry),
+    cvv: validateCvv(actualCvv())
+    // Validate against actual CVV
+  }));
+  const isValid = createMemo(() => Object.values(validation()).every((v) => !v));
+  return ssr(_tmpl$6, ssrHydrationKey(), ssrAttribute("aria-busy", escape(loading(), true), false), ssrAttribute("disabled", loading(), true), ssrAttribute("aria-invalid", !!validation().name, false) + ssrAttribute("aria-describedby", validation().name ? "err-name" : escape(void 0, true), false), ssrAttribute("value", escape(form().name, true), false), escape(createComponent(Show, {
     get when() {
-      return fieldErrors().name;
+      return touched().name && validation().name;
     },
     get children() {
-      return ssr(_tmpl$, ssrHydrationKey(), escape(fieldErrors().name));
+      return ssr(_tmpl$, ssrHydrationKey(), escape(validation().name));
     }
-  })), ssrAttribute("value", escape(card(), true), false), escape(createComponent(Show, {
+  })), ssrAttribute("aria-invalid", !!validation().card, false) + ssrAttribute("aria-describedby", validation().card ? "err-card" : escape(void 0, true), false), ssrAttribute("value", escape(form().card, true), false), escape(createComponent(Show, {
     get when() {
-      return fieldErrors().card;
+      return touched().card && validation().card;
     },
     get children() {
-      return ssr(_tmpl$, ssrHydrationKey(), escape(fieldErrors().card));
+      return ssr(_tmpl$2, ssrHydrationKey(), escape(validation().card));
     }
-  })), ssrAttribute("value", escape(expiry(), true), false), escape(createComponent(Show, {
+  })), ssrAttribute("aria-invalid", !!validation().expiry, false) + ssrAttribute("aria-describedby", validation().expiry ? "err-expiry" : escape(void 0, true), false), ssrAttribute("value", escape(form().expiry, true), false), escape(createComponent(Show, {
     get when() {
-      return fieldErrors().expiry;
+      return touched().expiry && validation().expiry;
     },
     get children() {
-      return ssr(_tmpl$, ssrHydrationKey(), escape(fieldErrors().expiry));
+      return ssr(_tmpl$3, ssrHydrationKey(), escape(validation().expiry));
     }
-  })), ssrAttribute("value", escape(cvv(), true), false), escape(createComponent(Show, {
+  })), ssrAttribute("aria-invalid", !!validation().cvv, false) + ssrAttribute("aria-describedby", validation().cvv ? "err-cvv" : escape(void 0, true), false), ssrAttribute("value", escape(maskedCvv(), true), false), escape(createComponent(Show, {
     get when() {
-      return fieldErrors().cvv;
+      return touched().cvv && validation().cvv;
     },
     get children() {
-      return ssr(_tmpl$, ssrHydrationKey(), escape(fieldErrors().cvv));
+      return ssr(_tmpl$4, ssrHydrationKey(), escape(validation().cvv));
     }
-  })), ssrAttribute("disabled", !isValid() || loading(), true), loading() ? "Processing..." : "Pay ₹499", escape(createComponent(Show, {
+  })), ssrAttribute("disabled", loading() || !isValid(), true), loading() ? "Processing..." : "Pay ₹499", escape(createComponent(Show, {
     get when() {
-      return fieldErrors().global;
+      return errors().submit;
     },
     get children() {
-      return ssr(_tmpl$, ssrHydrationKey(), escape(fieldErrors().global));
+      return ssr(_tmpl$5, ssrHydrationKey(), escape(errors().submit));
     }
   })));
 }
 
 const $$Index = createComponent$1(($$result, $$props, $$slots) => {
-  return renderTemplate`${renderComponent($$result, "BaseLayout", $$BaseLayout, { "title": "Complete your payment", "headerTitle": "Complete your payment", "headerSub": "Secure payment \u2014 fast & simple" }, { "default": ($$result2) => renderTemplate` ${renderComponent($$result2, "PaymentForm", PaymentForm, { "client:load": true, "client:component-hydration": "load", "client:component-path": "C:/Users/hp/Desktop/AstroSolid/simulation_payment/src/components/PaymentForm", "client:component-export": "default" })} ` })}`;
+  return renderTemplate`${renderComponent($$result, "BaseLayout", $$BaseLayout, { "title": "Complete your payment", "headerTitle": "Complete your payment", "headerSub": "Secure payment \u2014 fast & simple" }, { "default": ($$result2) => renderTemplate`  ${renderComponent($$result2, "PaymentForm", PaymentForm, { "client:load": true, "client:component-hydration": "load", "client:component-path": "C:/Users/hp/Desktop/AstroSolid/simulation_payment/src/components/PaymentForm", "client:component-export": "default" })} ` })}`;
 }, "C:/Users/hp/Desktop/AstroSolid/simulation_payment/src/pages/index.astro", void 0);
 
 const $$file = "C:/Users/hp/Desktop/AstroSolid/simulation_payment/src/pages/index.astro";

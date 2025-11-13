@@ -8,24 +8,18 @@ type Props = {
   date: string;
 };
 
-const Receipt: Component<Props> = (props) => {
-  return (
-    <div class="receipt">
-      <h2 class="receipt-title">Payment Completed</h2>
-
-      <div class="receipt-details">
-        <div class="receipt-row"><strong>Transaction ID:</strong> {props.id}</div>
-        <div class="receipt-row"><strong>Name:</strong> {props.name}</div>
-        <div class="receipt-row"><strong>Card:</strong> {props.maskedCard}</div>
-        <div class="receipt-row"><strong>Amount:</strong> {props.amount}</div>
-        <div class="receipt-row"><strong>Date:</strong> {new Date(props.date).toLocaleString()}</div>
-      </div>
-
-      <a class="btn primary large receipt-btn" href="/">
-        Make another payment
-      </a>
+const Receipt: Component<Props> = (p) => (
+  <div class="receipt" role="region" aria-labelledby="receipt-title">
+    <h2 id="receipt-title" class="receipt-title">Payment Completed</h2>
+    <div class="receipt-details">
+      <p><strong>Transaction ID:</strong> {p.id}</p>
+      <p><strong>Name:</strong> {p.name}</p>
+      <p><strong>Card:</strong> {p.maskedCard}</p>
+      <p><strong>Amount:</strong> {p.amount}</p>
+      <p><strong>Date:</strong> {new Date(p.date).toLocaleString()}</p>
     </div>
-  );
-};
+    <a class="btn primary large" href="/">Make another payment</a>
+  </div>
+);
 
 export default Receipt;

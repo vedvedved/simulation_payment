@@ -1,88 +1,67 @@
 import type { APIRoute } from "astro";
 import fs from "fs/promises";
 import os from "os";
-import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
+import { resolve } from "path";
 import { randomUUID } from "crypto";
+import { validateName, validateCard } from "../../lib/validators";
 import type { PaymentRecord } from "../../types";
 
-/**
- * NOTES:
- * - We DO NOT write into the deployed bundle (public/ or dist/) because it's read-only on serverless.
- * - Persistence is optional and stored in the system temp dir (ephemeral).
- * - If you need durable storage, replace the persistence block with a DB/S3/Supabase call.
- */
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-// temp file path (writable in serverless, ephemeral)
 const TEMP_FILE = resolve(os.tmpdir(), "payments.json");
 
-async function readPaymentsSafe(): Promise<PaymentRecord[]> {
-  try {
-    const raw = await fs.readFile(TEMP_FILE, "utf-8");
-    return JSON.parse(raw || "[]");
-  } catch {
-    return [];
-  }
+// --- simple lock for concurrent writes ---
+let writing = false;
+async function withLock<T>(fn: () => Promise<T>): Promise<T> {
+  while (writing) await new Promise((r) => setTimeout(r, 5));
+  writing = true;
+  try { return await fn(); }
+  finally { writing = false; }
 }
 
-async function writePaymentsSafe(arr: PaymentRecord[]) {
-  try {
-    await fs.writeFile(TEMP_FILE, JSON.stringify(arr, null, 2), "utf-8");
-  } catch (err) {
-    // Non-fatal: log and continue
-    console.error("writePaymentsSafe error:", err);
-  }
+async function readPayments(): Promise<PaymentRecord[]> {
+  try { return JSON.parse(await fs.readFile(TEMP_FILE, "utf-8") || "[]"); }
+  catch { return []; }
+}
+async function writePayments(arr: PaymentRecord[]) {
+  await fs.writeFile(TEMP_FILE, JSON.stringify(arr, null, 2), "utf-8");
 }
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const payload = await request.json().catch(() => ({} as Record<string, any>));
+    // --- security: content-type + csrf check ---
+    if (request.headers.get("content-type") !== "application/json")
+      return new Response(JSON.stringify({ error: "Invalid content type" }), { status: 400 });
+    if (request.headers.get("x-csrf-sim") !== "simulated-csrf-token")
+      return new Response(JSON.stringify({ error: "CSRF token missing" }), { status: 403 });
 
+    const payload = await request.json();
     const name = String(payload?.name ?? "").trim();
-    const rawCard = String(payload?.card ?? "").replace(/\s+/g, "");
-    const maskedCard = String(payload?.maskedCard ?? "").trim();
-    const expiry = String(payload?.expiry ?? "").trim();
-    const cvv = String(payload?.cvv ?? "").trim();
+    const card = String(payload?.card ?? "").replace(/\s+/g, "");
+    const masked = `•••• •••• •••• ${card.slice(-4)}`;
     const amount = String(payload?.amount ?? "₹499.00");
 
-    // Minimal validation (adjust or add luhnCheck if you have it)
-    if (!name) {
-      return new Response(JSON.stringify({ error: "name required" }), { status: 400, headers: { "Content-Type": "application/json" } });
-    }
-    if (!/^\d{13,19}$/.test(rawCard)) {
-      return new Response(JSON.stringify({ error: "card invalid" }), { status: 400, headers: { "Content-Type": "application/json" } });
-    }
-    if (!/^\d{3,4}$/.test(cvv)) {
-      return new Response(JSON.stringify({ error: "cvv invalid" }), { status: 400, headers: { "Content-Type": "application/json" } });
-    }
+    // --- server-side validation ---
+    const eName = validateName(name);
+    const eCard = validateCard(card);
+    if (eName || eCard)
+      return new Response(JSON.stringify({ error: eName || eCard }), { status: 400 });
 
     const id = "TXN-" + randomUUID().split("-")[0].toUpperCase();
-
     const record: PaymentRecord = {
-      id,
-      name,
-      maskedCard: maskedCard || `•••• •••• •••• ${rawCard.slice(-4)}`,
-      amount,
-      date: new Date().toISOString(),
-      expiry,
+      id, name, maskedCard: masked, amount, date: new Date().toISOString(),
     };
 
-    // OPTIONAL: persist to temp file (ephemeral). Failures won't crash the API.
-    try {
-      const arr = await readPaymentsSafe();
+    await withLock(async () => {
+      const arr = await readPayments();
       arr.push(record);
-      await writePaymentsSafe(arr);
-    } catch (persistErr) {
-      console.error("Persistence failed (non-fatal):", persistErr);
-    }
+      await writePayments(arr);
+    });
 
-    return new Response(JSON.stringify({ success: true, id }), {
+    return new Response(JSON.stringify({ id }), {
       status: 201,
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("API error:", err);
-    return new Response(JSON.stringify({ error: "server error" }), { status: 500, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "server error" }), { status: 500 });
   }
 };

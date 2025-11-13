@@ -1,160 +1,217 @@
-import { createSignal, createMemo, Show } from "solid-js";
-import {
-  formatCardInput,
-  formatExpiryInput,
-  maskCardDisplay,
-  validateName,
-  validateCard,
-  validateExpiry,
-  validateCvv,
-} from "../lib/validators";
+import { createSignal, createMemo, Show, batch } from "solid-js";
+import { formatCardInput,formatExpiryInput,validateName,validateCard,validateExpiry,validateCvv,} from "../lib/validators";
+import { paymentService } from "../services/paymentService";
+import type { ValidationErrors, PaymentFormData } from "../types";
 
 export default function PaymentForm() {
-  const [name, setName] = createSignal("");
-  const [card, setCard] = createSignal("");
-  const [expiry, setExpiry] = createSignal("");
-  const [cvv, setCvv] = createSignal("");
-  const [loading, setLoading] = createSignal(false);
-  const [fieldErrors, setFieldErrors] = createSignal({
+  const [form, setForm] = createSignal<PaymentFormData>({
     name: "",
     card: "",
     expiry: "",
     cvv: "",
-    global: "",
   });
-
-  // derived validity: enable pay only when all fields pass validation
-  const isValid = createMemo(() => {
-    const eName = validateName(name());
-    const eCard = validateCard(card());
-    const eExp = validateExpiry(expiry());
-    const eCvv = validateCvv(cvv());
-    // set inline errors so UI updates as user types
-    setFieldErrors({
-      name: eName,
-      card: eCard,
-      expiry: eExp,
-      cvv: eCvv,
-      global: "",
-    });
-    return !eName && !eCard && !eExp && !eCvv;
+  const [errors, setErrors] = createSignal<ValidationErrors>({});
+  const [loading, setLoading] = createSignal(false);
+  const [touched, setTouched] = createSignal<Record<keyof PaymentFormData, boolean>>({
+    name: false, card: false, expiry: false, cvv: false,
   });
+  
+  // Track the actual CVV value (unmasked)
+  const [actualCvv, setActualCvv] = createSignal("");
+  // Track the masked display value
+  const [maskedCvv, setMaskedCvv] = createSignal("");
+  
+  const csrf = "simulated-csrf-token"; // demo only
 
-  const onCardInput = (v: string) => setCard(formatCardInput(v));
-  const onExpiryInput = (v: string) => setExpiry(formatExpiryInput(v));
-  const onCvvInput = (v: string) => setCvv(v.replace(/\D/g, "").slice(0, 4));
+  const validation = createMemo(() => ({
+    name: validateName(form().name),
+    card: validateCard(form().card),
+    expiry: validateExpiry(form().expiry),
+    cvv: validateCvv(actualCvv()), // Validate against actual CVV
+  }));
 
-  const onSubmit = async (e: Event) => {
+  const isValid = createMemo(() =>
+    Object.values(validation()).every((v) => !v)
+  );
+
+  // Handle CVV input with masking
+  function handleCvvInput(value: string) {
+    const currentActual = actualCvv();
+    const currentMasked = maskedCvv();
+    
+    // Remove non-digits
+    const digitsOnly = value.replace(/\D/g, "");
+    
+    // Determine if user is adding or removing characters
+    if (value.length > currentMasked.length) {
+      // User is typing - add the new digit
+      const newDigit = digitsOnly[digitsOnly.length - 1];
+      if (newDigit && currentActual.length < 4) {
+        const newActual = currentActual + newDigit;
+        setActualCvv(newActual);
+        setMaskedCvv("•".repeat(newActual.length));
+        setForm({ ...form(), cvv: newActual });
+      }
+    } else {
+      // User is deleting
+      const newActual = currentActual.slice(0, -1);
+      setActualCvv(newActual);
+      setMaskedCvv("•".repeat(newActual.length));
+      setForm({ ...form(), cvv: newActual });
+    }
+  }
+
+  async function handleSubmit(e: Event) {
     e.preventDefault();
-    // final check
+    batch(() => setTouched({ name: true, card: true, expiry: true, cvv: true }));
     if (!isValid()) {
-      setFieldErrors((prev) => ({ ...prev, global: "Fix errors above before paying." }));
+      setErrors((p) => ({ ...p, submit: "Fix errors above before paying." }));
       return;
     }
-    setFieldErrors((p) => ({ ...p, global: "" }));
+    setErrors({});
     setLoading(true);
-
     try {
-      const resp = await fetch("/api/payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name().trim(),
-          card: card().replace(/\s+/g, ""),
-          maskedCard: maskCardDisplay(card()),
-          expiry: expiry(),
-          cvv: cvv(),
-          amount: "₹499.00",
-        }),
-      });
-
-      const data = await resp.json();
-      if (resp.ok && data.id) {
-        // safe navigation to receipt page
-        location.href = `/receipt?tx=${encodeURIComponent(data.id)}`;
-      } else {
-        setFieldErrors((p) => ({ ...p, global: data?.error || "Server error" }));
-      }
-    } catch (err) {
-      setFieldErrors((p) => ({ ...p, global: "Network error" }));
+      const data = await paymentService.submit(form(), csrf);
+      location.href = `/receipt?tx=${encodeURIComponent(data.id)}`;
+    } catch (err: any) {
+      console.error(err);
+      setErrors({ submit: err.message || "Payment failed" });
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <form class="form" onSubmit={onSubmit} noValidate>
-      <div class="form-row">
-        <label class="form-label">Name on card</label>
-        <input
-          class="input large-input"
-          value={name()}
-          onInput={(e) => setName((e.currentTarget as HTMLInputElement).value)}
-          placeholder="Full name"
-          autocomplete="cc-name"
-        />
-        <Show when={fieldErrors().name}>
-          <div class="error" role="alert">{fieldErrors().name}</div>
-        </Show>
-      </div>
-
-      <div class="form-row">
-        <label class="form-label">Card number</label>
-        <input
-          class="input large-input"
-          inputMode="numeric"
-          placeholder="1234 5678 9012 3456"
-          value={card()}
-          onInput={(e) => onCardInput((e.currentTarget as HTMLInputElement).value)}
-          autocomplete="cc-number"
-        />
-        <Show when={fieldErrors().card}>
-          <div class="error" role="alert">{fieldErrors().card}</div>
-        </Show>
-      </div>
-
-      <div class="form-grid">
-        <div>
-          <label class="form-label">Expiry (MM/YY)</label>
+    <form class="form" onSubmit={handleSubmit} noValidate aria-busy={loading()}>
+      <fieldset disabled={loading()} class="fieldset">
+        {/* Name Field */}
+        <div class="form-row" id="row-name">
+          <label for="name" class="form-label">
+            Name on card
+          </label>
           <input
-            class="input"
-            inputMode="numeric"
-            placeholder="MM/YY"
-            value={expiry()}
-            onInput={(e) => onExpiryInput((e.currentTarget as HTMLInputElement).value)}
-            autocomplete="cc-exp"
+            id="name"
+            class="input large-input"
+            aria-invalid={!!validation().name}
+            aria-describedby={validation().name ? "err-name" : undefined}
+            type="text"
+            value={form().name}
+            onInput={(e) => {
+              const v = (e.currentTarget as HTMLInputElement).value;
+              setForm({ ...form(), name: v });
+              setTouched({ ...touched(), name: true });
+            }}
+            placeholder="Full name"
+            autocomplete="cc-name"
           />
-          <Show when={fieldErrors().expiry}>
-            <div class="error" role="alert">{fieldErrors().expiry}</div>
+          <Show when={touched().name && validation().name}>
+            <div id="err-name" class="error" role="alert">
+              {validation().name}
+            </div>
           </Show>
         </div>
 
-        <div>
-          <label class="form-label">CVV</label>
+        {/* Card Number Field */}
+        <div class="form-row" id="row-card">
+          <label for="card" class="form-label">
+            Card number
+          </label>
           <input
-            class="input"
-            type="password"
+            id="card"
+            class="input large-input"
+            aria-invalid={!!validation().card}
+            aria-describedby={validation().card ? "err-card" : undefined}
             inputMode="numeric"
-            placeholder="***"
-            maxLength={4}
-            value={cvv()}
-            onInput={(e) => onCvvInput((e.currentTarget as HTMLInputElement).value)}
-            autocomplete="cc-csc"
+            type="text"
+            value={form().card}
+            onInput={(e) => {
+              const v = (e.currentTarget as HTMLInputElement).value;
+              setForm({ ...form(), card: formatCardInput(v) });
+              setTouched({ ...touched(), card: true });
+            }}
+            placeholder="1234 5678 9012 3456"
+            autocomplete="cc-number"
           />
-          <Show when={fieldErrors().cvv}>
-            <div class="error" role="alert">{fieldErrors().cvv}</div>
+          <Show when={touched().card && validation().card}>
+            <div id="err-card" class="error" role="alert">
+              {validation().card}
+            </div>
           </Show>
         </div>
-      </div>
 
-      <div class="form-actions">
-        <button class="btn pay large" type="submit" disabled={!isValid() || loading()}>
-          {loading() ? "Processing..." : "Pay ₹499"}
-        </button>
-      </div>
+        {/* Expiry and CVV Grid */}
+        <div class="form-grid">
+          {/* Expiry Field */}
+          <div class="form-row" id="row-expiry">
+            <label for="expiry" class="form-label">
+              Expiry (MM/YY)
+            </label>
+            <input
+              id="expiry"
+              class="input"
+              aria-invalid={!!validation().expiry}
+              aria-describedby={validation().expiry ? "err-expiry" : undefined}
+              inputMode="numeric"
+              type="text"
+              value={form().expiry}
+              onInput={(e) => {
+                const v = (e.currentTarget as HTMLInputElement).value;
+                setForm({ ...form(), expiry: formatExpiryInput(v) });
+                setTouched({ ...touched(), expiry: true });
+              }}
+              placeholder="MM/YY"
+              autocomplete="cc-exp"
+            />
+            <Show when={touched().expiry && validation().expiry}>
+              <div id="err-expiry" class="error" role="alert">
+                {validation().expiry}
+              </div>
+            </Show>
+          </div>
 
-      <Show when={fieldErrors().global}>
-        <div class="error" role="alert">{fieldErrors().global}</div>
+          {/* CVV Field with Masking */}
+          <div class="form-row" id="row-cvv">
+            <label for="cvv" class="form-label">
+              CVV
+            </label>
+            <input
+              id="cvv"
+              class="input"
+              aria-invalid={!!validation().cvv}
+              aria-describedby={validation().cvv ? "err-cvv" : undefined}
+              inputMode="numeric"
+              type="text"
+              value={maskedCvv()}
+              onInput={(e) => {
+                const v = (e.currentTarget as HTMLInputElement).value;
+                handleCvvInput(v);
+                setTouched({ ...touched(), cvv: true });
+              }}
+              placeholder="•••"
+              autocomplete="cc-csc"
+              maxLength={4}
+            />
+            <Show when={touched().cvv && validation().cvv}>
+              <div id="err-cvv" class="error" role="alert">
+                {validation().cvv}
+              </div>
+            </Show>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            class="btn pay large"
+            type="submit"
+            disabled={loading() || !isValid()}
+          >
+            {loading() ? "Processing..." : "Pay ₹499"}
+          </button>
+        </div>
+      </fieldset>
+
+      <Show when={errors().submit}>
+        <div class="error" role="alert">{errors().submit}</div>
       </Show>
     </form>
   );

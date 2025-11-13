@@ -1,34 +1,46 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ReceiptComponent from "../components/Receipt";
-import { type PaymentRecord } from "../types";
+import type { PaymentRecord } from "../types";
 
 const url = new URL(Astro.request.url);
 const tx = url.searchParams.get("tx");
 
 let record: PaymentRecord | null = null;
+let fetchError: string | null = null;
 
 if (tx) {
   try {
-    // server-side fetch to our own API route (SSR)
-    const base = new URL(Astro.request.url).origin;
-    const res = await fetch(`${base}/api/payment/${encodeURIComponent(tx)}`);
+    // Server-side fetch to our API route (SSR). Using absolute origin ensures it hits the deployed host.
+    const base = url.origin;
+    const res = await fetch(`${base}/api/payment/${encodeURIComponent(tx)}`, {
+      method: "GET",
+      headers: { "Accept": "application/json" }
+    });
+
     if (res.ok) {
+      // parse as PaymentRecord
       record = await res.json();
+    } else if (res.status === 404) {
+      fetchError = "Transaction not found.";
     } else {
-      record = null;
+      fetchError = `Server returned ${res.status}`;
     }
-  } catch {
-    record = null;
+  } catch (err) {
+    console.error("Receipt fetch error:", err);
+    fetchError = "Unable to fetch receipt.";
   }
+} else {
+  fetchError = "Transaction id (tx) missing from URL.";
 }
 ---
 <BaseLayout
   title={record ? "Payment Completed" : "Receipt"}
   headerTitle={record ? "Payment Completed" : "Receipt"}
-  headerSub={record ? "Thank you — your transaction was successful." : "No transaction found."}
+  headerSub={record ? "Thank you — your transaction was successful." : "Transaction details"}
 >
   {record ? (
+    <!-- Render Receipt component as a client island so it can be interactive if needed -->
     <ReceiptComponent
       id={record.id}
       name={record.name}
@@ -39,7 +51,7 @@ if (tx) {
     />
   ) : (
     <div class="receipt">
-      <p class="hint">Transaction ID missing or not found.</p>
+      <p class="hint">{fetchError ?? "Transaction not found."}</p>
       <a class="btn primary large" href="/">Back to payment</a>
     </div>
   )}
