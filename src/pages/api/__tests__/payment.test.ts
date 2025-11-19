@@ -1,99 +1,105 @@
 // src/pages/api/__tests__/payment.test.ts
-import { POST } from '../payment';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { POST } from "../payment";
+import fs from "fs/promises";
+import os from "os";
+import { resolve } from "path";
 
-// Mock fs/promises so tests do not write to disk
-vi.mock('fs/promises', () => {
-  return {
-    readFile: vi.fn(),
-    writeFile: vi.fn(),
-  };
-});
-import * as fs from 'fs/promises';
+const TEMP_FILE = resolve(os.tmpdir(), "payments.json");
 
-vi.mock('os', () => ({ tmpdir: () => '/tmp' }));
-vi.mock('path', () => ({ resolve: (...parts: string[]) => parts.join('/') }));
+async function readTempFile(): Promise<any[]> {
+  try {
+    const raw = await fs.readFile(TEMP_FILE, "utf-8");
+    return JSON.parse(raw || "[]");
+  } catch {
+    return [];
+  }
+}
 
-describe('POST /api/payment handler', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+async function removeTempFile() {
+  try {
+    await fs.unlink(TEMP_FILE);
+  } catch {
+    /* ignore */
+  }
+}
+
+describe("POST /api/payment", () => {
+  beforeEach(async () => {
+    await removeTempFile();
   });
 
-  it('returns 400 when content-type is not application/json', async () => {
-    const req = new Request('http://localhost/api/payment', {
-      method: 'POST',
-      headers: {
-        'content-type': 'text/plain',
-        'x-csrf-sim': 'simulated-csrf-token',
-      },
-      body: 'hello',
+  afterEach(async () => {
+    await removeTempFile();
+  });
+
+  it("returns 400 when content-type is not application/json", async () => {
+    const req = new Request("http://localhost/api/payment", {
+      method: "POST",
+      headers: { "content-type": "text/plain", "x-csrf-sim": "simulated-csrf-token" },
+      body: "hi",
     });
 
     const res = await POST({ request: req } as any);
     expect(res.status).toBe(400);
-    const body = JSON.parse(await res.text());
-    expect(body.error).toMatch(/invalid content type/i);
+    const json = JSON.parse(await res.text());
+    expect(json.error).toMatch(/invalid content type/i);
   });
 
-  it('returns 403 when csrf header missing', async () => {
-    const req = new Request('http://localhost/api/payment', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ name: 'A', card: '4242424242424242' }),
+  it("returns 403 when CSRF header missing", async () => {
+    const req = new Request("http://localhost/api/payment", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "A", card: "4242424242424242" }),
     });
 
     const res = await POST({ request: req } as any);
     expect(res.status).toBe(403);
-    const body = JSON.parse(await res.text());
-    expect(body.error).toMatch(/csrf token missing/i);
+    const json = JSON.parse(await res.text());
+    expect(json.error).toMatch(/csrf token missing/i);
   });
 
-  it('returns 400 when server-side validation fails (name or card invalid)', async () => {
-    const req = new Request('http://localhost/api/payment', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-csrf-sim': 'simulated-csrf-token',
-      },
-      body: JSON.stringify({ name: '', card: '1234' }), // invalid name + card
+  it("returns 400 when server-side validation fails (name or card invalid)", async () => {
+    const req = new Request("http://localhost/api/payment", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-csrf-sim": "simulated-csrf-token" },
+      body: JSON.stringify({ name: "", card: "1234" }), // invalid
     });
 
     const res = await POST({ request: req } as any);
     expect(res.status).toBe(400);
-    const body = JSON.parse(await res.text());
-    // either name error or card error
-    expect(body.error).toBeTruthy();
+    const json = JSON.parse(await res.text());
+    expect(json.error).toBeTruthy();
   });
 
-  it('creates a payment record, writes to file and returns id on success', async () => {
-    // mock readFile to return empty array initially, writeFile to resolve
-    (fs.readFile as any).mockResolvedValueOnce('[]');
-    (fs.writeFile as any).mockResolvedValueOnce(undefined);
-
+  it("creates a payment record, writes to temp file and returns id on success", async () => {
     const payload = {
-      name: 'Vedika Jamdar',
-      card: '4242424242424242',
-      amount: '₹499.00',
+      name: "Integration Tester",
+      card: "4242 4242 4242 4242",
+      amount: "₹499.00",
     };
 
-    const req = new Request('http://localhost/api/payment', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-csrf-sim': 'simulated-csrf-token',
-      },
+    const req = new Request("http://localhost/api/payment", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-csrf-sim": "simulated-csrf-token" },
       body: JSON.stringify(payload),
     });
 
     const res = await POST({ request: req } as any);
+    // successful creation
     expect(res.status).toBe(201);
 
-    const data = JSON.parse(await res.text());
-    expect(data.id).toBeTruthy();
-    // ensure we attempted to read and write payments
-    expect(fs.readFile).toHaveBeenCalled();
-    expect(fs.writeFile).toHaveBeenCalled();
+    const body = JSON.parse(await res.text());
+    expect(body.id).toBeTruthy();
+    expect(typeof body.id).toBe("string");
+
+    // ensure file exists and contains the record
+    const arr = await readTempFile();
+    expect(Array.isArray(arr)).toBe(true);
+    const found = arr.find((r: any) => r.id === body.id);
+    expect(found).toBeTruthy();
+    expect(found.name).toBe("Integration Tester");
+    // maskedCard pattern ends with last 4
+    expect(found.maskedCard).toMatch(/4242$/);
   });
 });
