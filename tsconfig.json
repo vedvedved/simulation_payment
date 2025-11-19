@@ -7,10 +7,10 @@
     "moduleResolution": "bundler",
     "target": "ES2022",
     "module": "ESNext",
-    // "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
-  }
-  
+    },
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
+  },
+  "include": ["src", "test", "**/*.test.ts", "**/*.test.tsx"]
 }

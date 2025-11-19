@@ -1,5 +1,5 @@
 import { e as createComponent, f as createAstro, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_nOWAxk6x.mjs';
-import { $ as $$BaseLayout } from '../chunks/BaseLayout_PdenlSjW.mjs';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_C0i8Mrwe.mjs';
 import { ssr, ssrHydrationKey, escape } from 'solid-js/web';
 export { renderers } from '../renderers.mjs';
 
@@ -36,10 +36,10 @@ const $$Receipt = createComponent(async ($$result, $$props, $$slots) => {
     fetchError = "Transaction id (tx) missing from URL.";
   }
   return renderTemplate`${renderComponent($$result, "BaseLayout", $$BaseLayout, { "title": record ? "Payment Completed" : "Receipt", "headerTitle": record ? "Payment Completed" : "Receipt", "headerSub": record ? "Thank you \u2014 your transaction was successful." : "Transaction details" }, { "default": async ($$result2) => renderTemplate`${record ? renderTemplate`<!-- Render Receipt component as a client island so it can be interactive if needed -->
-    ${renderComponent($$result2, "ReceiptComponent", Receipt, { "id": record.id, "name": record.name, "maskedCard": record.maskedCard, "amount": record.amount, "date": record.date, "client:load": true, "client:component-hydration": "load", "client:component-path": "C:/Users/hp/Desktop/AstroSolid/simulation_payment/src/components/Receipt", "client:component-export": "default" })}` : renderTemplate`${maybeRenderHead()}<div class="receipt"> <p class="hint">${fetchError ?? "Transaction not found."}</p> <a class="btn primary large" href="/">Back to payment</a> </div>`}` })}`;
-}, "C:/Users/hp/Desktop/AstroSolid/simulation_payment/src/pages/receipt.astro", void 0);
+    ${renderComponent($$result2, "ReceiptComponent", Receipt, { "id": record.id, "name": record.name, "maskedCard": record.maskedCard, "amount": record.amount, "date": record.date, "client:load": true, "client:component-hydration": "load", "client:component-path": "/Users/billeasymacbookpro/Documents/assignment/simulation_payment/src/components/Receipt", "client:component-export": "default" })}` : renderTemplate`${maybeRenderHead()}<div class="receipt"> <p class="hint">${fetchError ?? "Transaction not found."}</p> <a class="btn primary large" href="/">Back to payment</a> </div>`}` })}`;
+}, "/Users/billeasymacbookpro/Documents/assignment/simulation_payment/src/pages/receipt.astro", void 0);
 
-const $$file = "C:/Users/hp/Desktop/AstroSolid/simulation_payment/src/pages/receipt.astro";
+const $$file = "/Users/billeasymacbookpro/Documents/assignment/simulation_payment/src/pages/receipt.astro";
 const $$url = "/receipt";
 
 const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({

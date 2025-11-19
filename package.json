@@ -29,6 +29,7 @@
     "jsdom": "^27.2.0",
     "prettier": "^3.0.0",
     "typescript": "^5.6.2",
+    "vite-plugin-solid": "^2.11.10",
     "vitest": "^4.0.10",
     "whatwg-fetch": "^3.6.20"
   }
